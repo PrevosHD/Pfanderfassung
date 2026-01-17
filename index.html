@@ -167,7 +167,7 @@
         let counts = {};
         let editingItem = null;
         let addingItem = null;
-        let summaryMinimized = false;
+        let summaryMinimized = true; // Standardmäßig minimiert
 
         function renderGrid() {
             const grid = document.getElementById("grid");
@@ -263,7 +263,11 @@
             document.getElementById("modalTitle").innerText = item;
             const input = document.getElementById("modalInput");
             input.value = counts[item] || 0;
-            setTimeout(() => input.focus(), 100);
+            setTimeout(() => {
+                input.focus();
+                // Für mobile Geräte: Tastatur öffnen
+                input.click();
+            }, 100);
         }
 
         function saveEdit() {
@@ -286,7 +290,11 @@
             document.getElementById("modalAddCurrent").innerText = counts[item] || 0;
             const input = document.getElementById("modalAddInput");
             input.value = "";
-            setTimeout(() => input.focus(), 100);
+            setTimeout(() => {
+                input.focus();
+                // Für mobile Geräte: Tastatur öffnen
+                input.click();
+            }, 100);
         }
 
         function saveAdd() {
