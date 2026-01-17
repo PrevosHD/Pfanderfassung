@@ -29,6 +29,7 @@
     <!-- HEADER -->
     <div class="bg-gray-950 text-white p-4 sticky top-0 z-10 shadow-lg border-b-2 border-blue-500">
         <h1 class="text-2xl font-bold text-center">📦 Pfandzählung V2</h1>
+        <p class="text-xs text-gray-400 text-center mt-1">Webseite bereitgestellt von Nando</p>
 
         <div id="datumText" class="mt-2 font-semibold text-center text-blue-400 text-sm"></div>
 
@@ -404,27 +405,12 @@
         // Warnung beim Verlassen/Neuladen der Seite
         window.addEventListener('beforeunload', function (e) {
             if (hasUnsavedData) {
+                const message = 'Sie haben ungespeicherte Daten. Möchten Sie die Seite wirklich verlassen?';
                 e.preventDefault();
-                e.returnValue = ''; // Chrome benötigt returnValue gesetzt
-                return ''; // Für ältere Browser
+                e.returnValue = message;
+                return message;
             }
         });
-
-        // Pull-to-Refresh zusätzlich per JavaScript verhindern
-        let touchStartY = 0;
-        document.addEventListener('touchstart', function(e) {
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-
-        document.addEventListener('touchmove', function(e) {
-            const touchY = e.touches[0].clientY;
-            const touchDiff = touchY - touchStartY;
-
-            // Wenn am Seitenanfang und nach unten gewischt wird
-            if (window.scrollY === 0 && touchDiff > 0) {
-                e.preventDefault();
-            }
-        }, { passive: false });
 
         /* -------- Copy Animation -------- */
         function copyToClipboard() {
@@ -453,6 +439,31 @@
                 }, 1200);
             });
         }
+
+        /* -------- Pull-to-Refresh verhindern -------- */
+        let lastTouchY = 0;
+        let preventPullToRefresh = false;
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) { return; }
+            lastTouchY = e.touches[0].clientY;
+            // Verhindere Pull-to-Refresh wenn am Seitenanfang
+            preventPullToRefresh = (window.pageYOffset === 0);
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            const touchY = e.touches[0].clientY;
+            const touchYDelta = touchY - lastTouchY;
+            lastTouchY = touchY;
+
+            if (preventPullToRefresh) {
+                // Verhindere das Scrollen nach oben wenn bereits am Anfang
+                if (touchYDelta > 0) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+        }, { passive: false });
 
         /* -------- Init -------- */
         window.onload = () => {
