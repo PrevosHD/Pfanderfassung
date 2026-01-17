@@ -13,13 +13,22 @@ Die Anwendung wurde von **Nando** mit Unterstützung von Claude (AI-Assistent) e
 - 📱 **Mobile-First Design** - Optimiert für Smartphones und Tablets
 - 🎯 **Einfache Bedienung** - Schnelles Zählen durch Antippen der Artikel
 - ➕ **Flexible Eingabe** - Einzelne Artikel hinzufügen oder Mengen direkt eingeben
+- 💾 **Automatisches Speichern** - Alle Zählungen werden lokal im Browser gespeichert
+- ⏰ **Auto-Löschung** - Daten älter als 6 Stunden werden automatisch gelöscht
 - 📋 **Zusammenfassung** - Übersichtliche Darstellung aller gezählten Artikel
 - 📄 **Copy-Funktion** - Ergebnisse mit einem Klick in die Zwischenablage kopieren
 - 🔄 **Reset-Funktion** - Alle Werte zurücksetzen für eine neue Zählung
+- 🚫 **Pull-to-Refresh deaktiviert** - Verhindert versehentliches Neuladen auf mobilen Geräten
 
 ## 🔒 Datenschutz & Speicherung
 
 **Wichtig:** Die Zählung erfolgt **lokal auf dem Endgerät** und wird **nicht auf einem Server gespeichert**. Es werden keine Logs erstellt oder Daten übertragen. Alle Zählungen bleiben ausschließlich auf dem verwendeten Gerät.
+
+**Automatische Speicherung:**
+- Alle Eingaben werden automatisch im Browser-Speicher (localStorage) gespeichert
+- Daten bleiben auch nach Neuladen der Seite erhalten
+- Daten älter als **6 Stunden** werden beim nächsten Öffnen automatisch gelöscht
+- Manuelle Löschung jederzeit über "Alle zurücksetzen" möglich
 
 ## 🚀 Verwendung
 

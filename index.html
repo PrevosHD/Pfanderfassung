@@ -177,13 +177,29 @@
 
         /* -------- LocalStorage Funktionen -------- */
         function saveCounts() {
-            localStorage.setItem('pfandCounts', JSON.stringify(counts));
+            const data = {
+                counts: counts,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('pfandCounts', JSON.stringify(data));
         }
 
         function loadCounts() {
             const saved = localStorage.getItem('pfandCounts');
             if (saved) {
-                counts = JSON.parse(saved);
+                const data = JSON.parse(saved);
+                const now = Date.now();
+                const sixHours = 6 * 60 * 60 * 1000; // 6 Stunden in Millisekunden
+
+                // Prüfe ob Daten älter als 6 Stunden sind
+                if (data.timestamp && (now - data.timestamp) < sixHours) {
+                    // Daten sind noch gültig
+                    counts = data.counts || {};
+                } else {
+                    // Daten sind zu alt, lösche sie
+                    localStorage.removeItem('pfandCounts');
+                    counts = {};
+                }
             }
         }
 
