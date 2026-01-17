@@ -175,6 +175,18 @@
         let addingItem = null;
         let summaryMinimized = true; // Standardmäßig minimiert
 
+        /* -------- LocalStorage Funktionen -------- */
+        function saveCounts() {
+            localStorage.setItem('pfandCounts', JSON.stringify(counts));
+        }
+
+        function loadCounts() {
+            const saved = localStorage.getItem('pfandCounts');
+            if (saved) {
+                counts = JSON.parse(saved);
+            }
+        }
+
         function renderGrid() {
             const grid = document.getElementById("grid");
             grid.innerHTML = "";
@@ -223,14 +235,14 @@
             counts[item] = (counts[item] || 0) + 1;
             updateSingleItem(item);
             renderSummary();
-            enablePageLeaveWarning();
+            saveCounts();
         }
 
         function decrement(item) {
             counts[item] = Math.max(0, (counts[item] || 0) - 1);
             updateSingleItem(item);
             renderSummary();
-            enablePageLeaveWarning();
+            saveCounts();
         }
 
         function updateSingleItem(itemName) {
@@ -271,11 +283,14 @@
             document.getElementById("modalTitle").innerText = item;
             const input = document.getElementById("modalInput");
             input.value = counts[item] || 0;
+
+            // Für mobile Geräte: Tastatur sofort öffnen
             setTimeout(() => {
                 input.focus();
-                // Für mobile Geräte: Tastatur öffnen
-                input.click();
-            }, 100);
+                input.select(); // Selektiert den Text für schnelles Überschreiben
+                // iOS Safari Fix: Trigger input event
+                input.setSelectionRange(0, input.value.length);
+            }, 150);
         }
 
         function saveEdit() {
@@ -284,7 +299,7 @@
             closeModal();
             updateSingleItem(editingItem);
             renderSummary();
-            enablePageLeaveWarning();
+            saveCounts();
         }
 
         function closeModal() {
@@ -299,11 +314,13 @@
             document.getElementById("modalAddCurrent").innerText = counts[item] || 0;
             const input = document.getElementById("modalAddInput");
             input.value = "";
+
+            // Für mobile Geräte: Tastatur sofort öffnen
             setTimeout(() => {
                 input.focus();
-                // Für mobile Geräte: Tastatur öffnen
+                // iOS Safari Fix
                 input.click();
-            }, 100);
+            }, 150);
         }
 
         function saveAdd() {
@@ -314,7 +331,7 @@
             closeModalAdd();
             updateSingleItem(addingItem);
             renderSummary();
-            enablePageLeaveWarning();
+            saveCounts();
         }
 
         function closeModalAdd() {
@@ -328,9 +345,9 @@
 
         function confirmReset() {
             counts = {};
+            localStorage.removeItem('pfandCounts'); // Lösche gespeicherte Daten
             closeModalReset();
             renderGrid();
-            disablePageLeaveWarning();
         }
 
         function closeModalReset() {
@@ -391,26 +408,7 @@
             }
         }
 
-        /* -------- Warnung beim Verlassen der Seite -------- */
-        let hasUnsavedData = false;
 
-        function enablePageLeaveWarning() {
-            hasUnsavedData = true;
-        }
-
-        function disablePageLeaveWarning() {
-            hasUnsavedData = false;
-        }
-
-        // Warnung beim Verlassen/Neuladen der Seite
-        window.addEventListener('beforeunload', function (e) {
-            if (hasUnsavedData) {
-                const message = 'Sie haben ungespeicherte Daten. Möchten Sie die Seite wirklich verlassen?';
-                e.preventDefault();
-                e.returnValue = message;
-                return message;
-            }
-        });
 
         /* -------- Copy Animation -------- */
         function copyToClipboard() {
@@ -472,6 +470,7 @@
             const heute = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
             document.getElementById("datumText").innerText = `Pfandzählung vom: ${heute}`;
 
+            loadCounts(); // Lade gespeicherte Daten
             renderGrid();
         };
     </script>
