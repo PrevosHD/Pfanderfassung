@@ -16,6 +16,11 @@
         .modal-bg {
             background: rgba(0, 0, 0, 0.6);
         }
+
+        /* Pull-to-Refresh deaktivieren */
+        body {
+            overscroll-behavior-y: contain;
+        }
     </style>
 </head>
 
@@ -217,12 +222,14 @@
             counts[item] = (counts[item] || 0) + 1;
             updateSingleItem(item);
             renderSummary();
+            enablePageLeaveWarning();
         }
 
         function decrement(item) {
             counts[item] = Math.max(0, (counts[item] || 0) - 1);
             updateSingleItem(item);
             renderSummary();
+            enablePageLeaveWarning();
         }
 
         function updateSingleItem(itemName) {
@@ -276,6 +283,7 @@
             closeModal();
             updateSingleItem(editingItem);
             renderSummary();
+            enablePageLeaveWarning();
         }
 
         function closeModal() {
@@ -305,6 +313,7 @@
             closeModalAdd();
             updateSingleItem(addingItem);
             renderSummary();
+            enablePageLeaveWarning();
         }
 
         function closeModalAdd() {
@@ -320,6 +329,7 @@
             counts = {};
             closeModalReset();
             renderGrid();
+            disablePageLeaveWarning();
         }
 
         function closeModalReset() {
@@ -379,6 +389,42 @@
         `;
             }
         }
+
+        /* -------- Warnung beim Verlassen der Seite -------- */
+        let hasUnsavedData = false;
+
+        function enablePageLeaveWarning() {
+            hasUnsavedData = true;
+        }
+
+        function disablePageLeaveWarning() {
+            hasUnsavedData = false;
+        }
+
+        // Warnung beim Verlassen/Neuladen der Seite
+        window.addEventListener('beforeunload', function (e) {
+            if (hasUnsavedData) {
+                e.preventDefault();
+                e.returnValue = ''; // Chrome benötigt returnValue gesetzt
+                return ''; // Für ältere Browser
+            }
+        });
+
+        // Pull-to-Refresh zusätzlich per JavaScript verhindern
+        let touchStartY = 0;
+        document.addEventListener('touchstart', function(e) {
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function(e) {
+            const touchY = e.touches[0].clientY;
+            const touchDiff = touchY - touchStartY;
+
+            // Wenn am Seitenanfang und nach unten gewischt wird
+            if (window.scrollY === 0 && touchDiff > 0) {
+                e.preventDefault();
+            }
+        }, { passive: false });
 
         /* -------- Copy Animation -------- */
         function copyToClipboard() {
