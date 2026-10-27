@@ -139,7 +139,7 @@ h1{margin:0;font-size:1.5rem;font-weight:700}
 <div id="m-edit" class="modal" hidden>
   <div class="box" role="dialog" aria-modal="true" aria-labelledby="m-edit-title">
     <h3 id="m-edit-title"></h3>
-    <input id="m-edit-input" type="number" inputmode="numeric" pattern="[0-9]*" min="0" aria-label="Neuer Wert">
+    <input id="m-edit-input" type="text" inputmode="numeric" pattern="[0-9]*" min="0" aria-label="Neuer Wert">
     <div class="box-btns">
       <button type="button" id="m-edit-ok" class="btn btn-green">✓ Speichern</button>
       <button type="button" class="btn btn-gray" data-close>✕ Abbrechen</button>
@@ -151,7 +151,7 @@ h1{margin:0;font-size:1.5rem;font-weight:700}
   <div class="box add" role="dialog" aria-modal="true" aria-labelledby="m-add-title">
     <h3 id="m-add-title"></h3>
     <p>Aktueller Wert: <b id="m-add-cur">0</b></p>
-    <input id="m-add-input" type="number" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="Betrag hinzufügen" aria-label="Betrag hinzufügen">
+    <input id="m-add-input" type="text" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="Betrag hinzufügen" aria-label="Betrag hinzufügen">
     <div class="box-btns">
       <button type="button" id="m-add-ok" class="btn btn-green">✓ Hinzufügen</button>
       <button type="button" class="btn btn-gray" data-close>✕ Abbrechen</button>
@@ -345,7 +345,11 @@ h1{margin:0;font-size:1.5rem;font-weight:700}
   // Dialoge wie in V2
   function open(id, input) {
     $(id).hidden = false;
-    if (input) setTimeout(function () { try { input.focus(); input.select(); } catch (e) {} }, 120);
+    if (input) {
+      // Direkt im Tipp fokussieren, sonst öffnet iOS die Zahlentastatur nicht
+      try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
+      setTimeout(function () { try { input.setSelectionRange(0, input.value.length); } catch (e) { try { input.select(); } catch (e2) {} } }, 30);
+    }
   }
   function closeAll() { ["m-edit", "m-add", "m-reset"].forEach(function (id) { $(id).hidden = true; }); current = null; }
   function num(v) { var n = parseInt(v, 10); return isNaN(n) ? null : n; }
