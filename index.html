@@ -1,496 +1,456 @@
 <!DOCTYPE html>
 <html lang="de">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pfandzählung V2</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Palettenzähler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow+Semi+Condensed:wght@500;600&display=swap">
+<style>
+/* Grundlage: Abstand zu Notch und Home-Leiste, kein Seitenrand */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+/* Layout: eine schmale Spalte; je Ordner-Blatt ein Kärtchen mit seinen Ordertypen (Reihenfolge wie im Ordner); Summe und Kopieren fest am unteren Rand. */
+:root{
+  --bg:#e6eaed;
+  --surface:#fbfcfd;
+  --line:#cfd7dd;
+  --fg:#121b22;
+  --muted:#596670;
+  --signal:#ffc21a;
+  --signal-ink:#1f1800;
+  --signal-tint:#fff1c2;
+  --press:rgba(18,27,34,.08);
+  --shadow:rgba(18,27,34,.10);
+  --danger:#b3261e;
+  --danger-ink:#ffffff;
+  --pic-filter:none;
+  --font-display:"Barlow Condensed","Roboto Condensed","sans-serif-condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
+  --font-body:"Barlow Semi Condensed","Roboto Condensed","sans-serif-condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
+  --bar-h:76px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1115;--surface:#151e25;--line:#2a3741;--fg:#e8eef2;--muted:#93a0aa;
+    --signal:#ffc21a;--signal-ink:#1f1800;--signal-tint:#2b2410;
+    --press:rgba(232,238,242,.08);--shadow:rgba(0,0,0,.45);
+    --danger:#ff7b72;--danger-ink:#1c0603;--pic-filter:brightness(.9);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1115;--surface:#151e25;--line:#2a3741;--fg:#e8eef2;--muted:#93a0aa;
+  --signal:#ffc21a;--signal-ink:#1f1800;--signal-tint:#2b2410;
+  --press:rgba(232,238,242,.08);--shadow:rgba(0,0,0,.45);
+  --danger:#ff7b72;--danger-ink:#1c0603;--pic-filter:brightness(.9);
+  color-scheme:dark;
+}
 
-    <!-- Icons -->
-    <link href="https://unpkg.com/lucide-static/font/lucide.css" rel="stylesheet">
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 
-    <style>
-        .modal-bg {
-            background: rgba(0, 0, 0, 0.6);
-        }
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:22px calc(var(--bar-h) + 28px + env(safe-area-inset-bottom, 0px))}
 
-        /* Pull-to-Refresh deaktivieren */
-        body {
-            overscroll-behavior-y: contain;
-        }
-    </style>
+.top{display:flex;flex-direction:column;gap:8px}
+.eyebrow{margin:0;font-family:var(--font-display);font-weight:600;font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;font-family:var(--font-display);font-weight:700;font-size:2.25rem;line-height:.95;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+.hint{margin:0;color:var(--muted);font-size:1.02rem;line-height:1.4;max-width:34em}
+.hint strong{color:var(--fg);font-weight:600}
+.key{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border:1.5px solid var(--line);border-radius:50%;color:var(--fg);font-weight:600;line-height:1;vertical-align:-.25em}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:grid;grid-template-columns:58px minmax(0,1fr);min-height:62px;transition:background-color .15s}
+.row + .row{border-top:1px solid var(--line)}
+.row.has{background:var(--signal-tint)}
+
+.minus,.plus{appearance:none;-webkit-appearance:none;margin:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.minus{display:grid;place-items:start center;padding:13px 0 0;border-right:1px solid var(--line)}
+.ring{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);color:var(--fg)}
+.minus:disabled{cursor:default}
+.minus:disabled .ring{opacity:.3}
+.minus:not(:disabled):active .ring{background:var(--press)}
+.plus{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name count" "pic pic";align-items:center;column-gap:12px;padding:9px 12px 9px 14px;text-align:left;min-width:0}
+.list.pics .plus{row-gap:10px;padding-bottom:12px}
+.plus:active{background:var(--press)}
+.name{grid-area:name;min-width:0;font-size:1.15rem;font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.pic{grid-area:pic;justify-self:start;display:block;width:auto;height:auto;max-width:100%;max-height:112px;border-radius:8px;filter:var(--pic-filter);pointer-events:none;-webkit-user-drag:none;user-select:none}
+.list:not(.pics) .pic{display:none}
+.count{grid-area:count;flex:none;display:grid;place-items:center;min-width:54px;height:44px;padding:0 8px;box-sizing:border-box;border-radius:10px;border:1.5px dashed var(--line);font-family:var(--font-display);font-weight:700;font-size:1.8rem;line-height:1;font-variant-numeric:tabular-nums;color:var(--muted)}
+.row.has .count{background:var(--signal);border:1.5px solid var(--signal);color:var(--signal-ink)}
+.count.bump{animation:bump .22s ease-out}
+.count.dip{animation:dip .22s ease-out}
+@keyframes bump{40%{transform:scale(1.18)}}
+@keyframes dip{40%{transform:scale(.85)}}
+
+.out{display:flex;flex-direction:column;gap:12px;padding-top:8px}
+.out h2{margin:0;font-family:var(--font-display);font-weight:700;font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#preview{display:block;width:100%;box-sizing:border-box;margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);font:500 1.05rem/1.5 var(--font-body);resize:none}
+#preview::placeholder{color:var(--muted)}
+.check{display:flex;align-items:center;gap:12px;min-height:44px;font-size:1.05rem;cursor:pointer}
+.check input{width:22px;height:22px;margin:0;flex:none;accent-color:var(--fg)}
+.reset{appearance:none;-webkit-appearance:none;min-height:50px;padding:0 16px;border-radius:12px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);font:600 1.05rem/1.2 var(--font-body);cursor:pointer;touch-action:manipulation}
+.reset.armed{background:var(--danger);color:var(--danger-ink)}
+
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -8px 24px var(--shadow);
+  padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px));
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.bar-in{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.sum{margin:0;display:flex;align-items:center;gap:10px;min-width:0}
+.sum-n{font-family:var(--font-display);font-weight:700;font-size:2.5rem;line-height:1;font-variant-numeric:tabular-nums}
+.sum-l{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+.sum-l b{font-weight:600;font-size:1.05rem}
+.sum-l b,.sum-l span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum-l span{color:var(--muted);font-size:.95rem}
+.copy{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:54px;padding:0 20px;border:0;border-radius:14px;background:var(--fg);color:var(--bg);font-family:var(--font-display);font-weight:700;font-size:1.3rem;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;touch-action:manipulation}
+.copy:active{transform:translateY(1px)}
+.copy .ok{display:none}
+.copy.done .lbl{display:none}
+.copy.done .ok{display:inline-flex;align-items:center;gap:6px}
+@media (max-width:359px){.copy{padding:0 16px}}
+
+.toast{position:fixed;left:50%;z-index:30;bottom:calc(var(--bar-h) + 14px + env(safe-area-inset-bottom, 0px));
+  display:flex;align-items:center;gap:14px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;padding:12px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-weight:600;box-shadow:0 8px 24px var(--shadow);
+  opacity:0;transform:translate(-50%,10px);pointer-events:none;transition:opacity .18s,transform .18s}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{appearance:none;border:0;background:transparent;color:inherit;font:700 1rem/1 var(--font-display);letter-spacing:.06em;text-transform:uppercase;text-decoration:underline;text-underline-offset:3px;padding:6px 2px;cursor:pointer;flex:none}
+
+.minus:focus-visible,.plus:focus-visible,.reset:focus-visible,.toast button:focus-visible,#preview:focus-visible{outline:2.5px solid var(--fg);outline-offset:-4px}
+.copy:focus-visible,.check input:focus-visible{outline:2.5px solid var(--fg);outline-offset:3px}
+
+@media (prefers-reduced-motion: reduce){
+  .count.bump,.count.dip{animation:none}
+  .row,.toast{transition:none}
+}
+</style>
 </head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <p class="eyebrow">35 Ordertypen · wie im Ordner</p>
+    <h1>Palettenzähler</h1>
+    <p class="hint">Antippen zählt <strong>+1 fertige Palette</strong>. Vertippt? Links mit <span class="key" aria-hidden="true">−</span><span class="sr">Minus</span> eine abziehen.</p>
+    <label class="check"><input type="checkbox" id="pics"> Bilder anzeigen</label>
+  </header>
 
-<body class="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 pb-20">
+  <div id="list" class="list"></div>
 
-    <!-- HEADER -->
-    <div class="bg-gray-950 text-white p-4 sticky top-0 z-10 shadow-lg border-b-2 border-blue-500">
-        <h1 class="text-2xl font-bold text-center">📦 Pfandzählung V2</h1>
-        <p class="text-xs text-gray-400 text-center mt-1">Webseite bereitgestellt von Nando</p>
+  <section class="out" aria-labelledby="out-title">
+    <h2 id="out-title">Liste zum Kopieren</h2>
+    <textarea id="preview" rows="3" readonly placeholder="Noch nichts gezählt. Tippe oben auf einen Ordertyp." aria-label="Text, der kopiert wird"></textarea>
+    <label class="check"><input type="checkbox" id="zeros"> Ordertypen mit 0 mitkopieren</label>
+    <button type="button" id="reset" class="reset">Alle auf 0 setzen</button>
+  </section>
+</main>
 
-        <div id="datumText" class="mt-2 font-semibold text-center text-blue-400 text-sm"></div>
+<div class="bar">
+  <div class="bar-in">
+    <p class="sum" aria-live="polite"><span id="total" class="sum-n">0</span><span class="sum-l"><b id="total-word">Paletten</b><span id="kinds">noch nichts gezählt</span></span></p>
+    <button type="button" id="copy" class="copy"><span class="lbl">Kopieren</span><span class="ok"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Kopiert</span></button>
+  </div>
+</div>
 
-        <button onclick="resetAll()"
-            class="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold">
-            Alle zurücksetzen
-        </button>
-    </div>
+<div id="toast" class="toast" role="status" aria-live="polite"><span id="toast-text"></span><button type="button" id="toast-action" hidden></button></div>
 
-    <!-- GRID -->
-    <div id="grid" class="p-4 grid grid-cols-2 md:grid-cols-3 gap-4 pb-96"></div>
+<script>
+(function () {
+  "use strict";
 
-    <!-- MODAL EDIT -->
-    <div id="modal" class="fixed inset-0 modal-bg hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-sm border-2 border-blue-500">
-            <h3 id="modalTitle" class="text-lg font-bold text-white mb-4"></h3>
-            <input id="modalInput" type="number" inputmode="numeric" pattern="[0-9]*"
-                class="w-full p-3 border-2 border-blue-500 bg-gray-700 text-white rounded-lg text-2xl font-bold text-center mb-4">
-            <div class="flex gap-2">
-                <button onclick="saveEdit()"
-                    class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold">✓
-                    Speichern</button>
-                <button onclick="closeModal()"
-                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-semibold">✕
-                    Abbrechen</button>
-            </div>
-        </div>
-    </div>
+  // Ordertypen wie im Ordner: ein Eintrag pro Blatt.
+  // Bild: Kasten und Flaschen, ausgeschnitten aus dem Foto des jeweiligen Ordner-Blatts.
+  var SHEETS = [
+    [{ n: "Bier 0.33L", img: "img/bier-0-33l.jpg", w: 690, h: 200 }, { n: "Bier 0.5L", img: "img/bier-0-5l.jpg", w: 672, h: 200 }],
+    [{ n: "Euro 0.33L", img: "img/euro-0-33l.jpg", w: 527, h: 200 }, { n: "Euro 0.5L", img: "img/euro-0-5l.jpg", w: 504, h: 200 }],
+    [{ n: "Bügel 0.33L", img: "img/bugel-0-33l.jpg", w: 500, h: 200 }, { n: "Bügel 0.5L", img: "img/bugel-0-5l.jpg", w: 504, h: 200 }],
+    [{ n: "Stubbi 0.33L", img: "img/stubbi-0-33l.jpg", w: 521, h: 200 }, { n: "Stubbi 0.5L", img: "img/stubbi-0-5l.jpg", w: 518, h: 200 }],
+    [{ n: "Maurer 0.5L", img: "img/maurer-0-5l.jpg", w: 496, h: 200 }, { n: "Schumacher 1.0L", img: "img/schumacher-1-0l.jpg", w: 484, h: 200 }],
+    [{ n: "Einweg Glas", img: "img/einweg-glas.jpg", w: 160, h: 200 }, { n: "Joghurt 0.5L", img: "img/joghurt-0-5l.jpg", w: 512, h: 200 }],
+    [{ n: "Milch 1L", img: "img/milch-1l.jpg", w: 535, h: 200 }, { n: "Saft 0.7L", img: "img/saft-0-7l.jpg", w: 502, h: 200 }],
+    [{ n: "Saft 1.0L", img: "img/saft-1-0l.jpg", w: 494, h: 200 }, { n: "Wasser 0.7/0.75L Glas", img: "img/wasser-0-7-0-75l-glas.jpg", w: 494, h: 200 }],
+    [{ n: "Römerwall 0.7L PET", img: "img/romerwall-0-7l-pet.jpg", w: 647, h: 200 }, { n: "Wasser 1.0L PET Blau", img: "img/wasser-1-0l-pet-blau.jpg", w: 494, h: 200 }],
+    [{ n: "Charitea 0.33L", img: "img/charitea-0-33l.jpg", w: 496, h: 200 }, { n: "Cola PET 1L", img: "img/cola-pet-1l.jpg", w: 491, h: 200 }],
+    [{ n: "GDB Grün 1.0L PET", img: "img/gdb-grun-1-0l-pet.jpg", w: 491, h: 200 }, { n: "Mate 0.5L", img: "img/mate-0-5l.jpg", w: 480, h: 200 }],
+    [{ n: "Cola Glas 0.2L/0.33L", img: "img/cola-glas-0-2l-0-33l.jpg", w: 487, h: 200 }, { n: "Cola Glas 0.5L", img: "img/cola-glas-0-5l.jpg", w: 471, h: 200 }],
+    [{ n: "Cola Glas 1L", img: "img/cola-glas-1l.jpg", w: 432, h: 200 }, { n: "Mio Mate 0.5L", img: "img/mio-mate-0-5l.jpg", w: 481, h: 200 }],
+    [{ n: "Gerolsteiner 1.0L PET", img: "img/gerolsteiner-1-0l-pet.jpg", w: 488, h: 200 }, { n: "Gerolsteiner 0.75L Glas", img: "img/gerolsteiner-0-75l-glas.jpg", w: 481, h: 200 }],
+    [{ n: "Gerolsteiner 1.0L Glas", img: "img/gerolsteiner-1-0l-glas.jpg", w: 417, h: 200 }, { n: "Gerolsteiner 0.25L Glas", img: "img/gerolsteiner-0-25l-glas.jpg", w: 468, h: 200 }],
+    [{ n: "TG", img: "img/tg.jpg", w: 477, h: 200 }, { n: "Schweppes 1.0L PET", img: "img/schweppes-1-0l-pet.jpg", w: 431, h: 200 }],
+    [{ n: "GDB 0.5L PET", img: "img/gdb-0-5l-pet.jpg", w: 496, h: 200 }, { n: "Schweppes 0.2L Glas", img: "img/schweppes-0-2l-glas.jpg", w: 482, h: 200 }],
+    [{ n: "Sinalco 0.5L PET", img: "img/sinalco-0-5l-pet.jpg", w: 494, h: 200 }]
+  ];
 
-    <!-- MODAL ADD -->
-    <div id="modalAdd" class="fixed inset-0 modal-bg hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-sm border-2 border-green-500">
-            <h3 id="modalAddTitle" class="text-lg font-bold text-white mb-4"></h3>
-            <p class="text-gray-300 mb-2">Aktueller Wert: <span id="modalAddCurrent" class="text-blue-400 font-bold"></span></p>
-            <input id="modalAddInput" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="Betrag hinzufügen"
-                class="w-full p-3 border-2 border-green-500 bg-gray-700 text-white rounded-lg text-2xl font-bold text-center mb-4">
-            <div class="flex gap-2">
-                <button onclick="saveAdd()"
-                    class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold">✓
-                    Hinzufügen</button>
-                <button onclick="closeModalAdd()"
-                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-semibold">✕
-                    Abbrechen</button>
-            </div>
-        </div>
-    </div>
+  var KEY = "palettenzaehler.v1";
+  var state = { counts: {}, zeros: false, pics: true };
+  var items = [];
 
-    <!-- MODAL RESET CONFIRMATION -->
-    <div id="modalReset" class="fixed inset-0 modal-bg hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-sm border-2 border-red-500">
-            <h3 class="text-lg font-bold text-white mb-4">⚠️ Alle Werte zurücksetzen?</h3>
-            <p class="text-gray-300 mb-6">Alle gezählten Werte werden auf 0 zurückgesetzt. Diese Aktion kann nicht rückgängig gemacht werden.</p>
-            <div class="flex gap-2">
-                <button onclick="confirmReset()"
-                    class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold">✓
-                    Zurücksetzen</button>
-                <button onclick="closeModalReset()"
-                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-semibold">✕
-                    Abbrechen</button>
-            </div>
-        </div>
-    </div>
+  function $(id) { return document.getElementById(id); }
 
-    <!-- ZUSAMMENFASSUNG -->
-    <div id="summary"
-        class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t-4 border-blue-500 shadow-2xl p-4 max-h-80 overflow-y-auto hidden">
-    </div>
+  function slug(s) {
+    return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
 
-    <script>
-        /* ---------------------------------------------
-           ITEMS: Hybrid (Bild ODER Emoji)
-        --------------------------------------------- */
+  function clean(raw) {
+    var out = { counts: {}, zeros: false, pics: true };
+    if (!raw || typeof raw !== "object") return out;
+    var c = raw.counts;
+    if (c && typeof c === "object") {
+      Object.keys(c).forEach(function (k) {
+        var n = Math.floor(Number(c[k]));
+        if (n > 0 && n < 10000) out.counts[k] = n;
+      });
+    }
+    out.zeros = raw.zeros === true;
+    out.pics = raw.pics !== false;
+    return out;
+  }
 
-        const items = [
-            { name: 'Bier 0,33L', img: 'bier033.png' },
-            { name: 'Bier 0,5L', img: 'bier05.png' },
-            { name: 'Bügel 0,5L (Allgäuer/Flensburger)', img: 'buegel05.png' },
-            { name: 'Stubbi 0,33L (Bundaberg/Astra)', img: 'stubbi03.png' },
-            { name: 'Bügel 0,33L', img: 'buegel03.png' },
-            { name: 'Euro 0,33L (Püllecken/Gaffel)', img: 'euro033.png' },
-            { name: 'Euro 0,5L (Augustiner/Bayreuther)', img: 'euro05.png' },
-            { name: 'Stubbi 0,5L (Veltins)', img: 'stubbi05.png' },
-            { name: 'Maurer 0,5L (Kisten)', img: 'maurer05.png' },
-            { name: 'Schumacher (Kisten)', img: 'schumacher.png' },
-            { name: 'Milch (5 Hoch)', img: 'milch.png' },
-            { name: 'Joghurt (10 Hoch)', img: 'joghurt.png' },
-            { name: 'Saft 0,7L', img: 'saft07.png' },
-            { name: 'Saft 1L', img: 'saft1l.png' },
-            { name: 'Wasser 0,7/0,75 Glas', img: 'wasser07glas.png' },
-            { name: 'Wasser 1L PET', img: 'wasser1lpet.png' },
-            { name: 'GDB 1L', img: 'gdb.png' },
-            { name: 'Gerolsteiner 1L PET', img: 'gerolsteiner1lpet.png' },
-            { name: 'Römerwall 0,7L PET', img: 'roemerwall07.png' },
-            { name: 'Mio Mate 0,5L', img: 'miomate.png' },
-            { name: 'Gerolsteiner 0,75 Glas', img: 'gerolsteiner07glas.png' },
-            { name: 'GDB 0,5L pet', img: 'gdb05pet.png' },
-            { name: 'Gerolsteiner 1L Glas', img: 'gerolsteiner1lglas.png' },
-            { name: 'Gerolsteiner 0,25 Glas', img: 'gerolsteiner02glas.png' },
-            { name: 'Schweppes 0,2L Glas', img: 'schweppes02.png' },
-            { name: 'Schweppes 1L PET', img: 'schweppes1l.png' },
-            { name: 'Mate 0,5L', img: 'mate05.png' },
-            { name: 'Cola PET 1L', img: 'cola1lpet.png' },
-            { name: 'Cola Glas 1L', img: 'cola1lglas.png' },
-            { name: 'Cola Glas 0,5L', img: 'cola05glas.png' },
-            { name: 'Cola Glas 0,2/0,33L', img: 'cola02glas.png' },
-            { name: 'Sinalco', img: 'sinalco.png' },
-            { name: 'Charitea/Lemonaid', img: 'charitea.png' },
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      return raw ? clean(JSON.parse(raw)) : null;
+    } catch (e) { return null; }
+  }
 
-            { name: 'Einweg Glas (Blaue Faltkiste)', img: 'faltbox.png' },
-            { name: 'EPS Steigen', emoji: '🧺' },
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
 
-            { name: 'RC', img: 'rc.png' },
-            { name: 'IPT', emoji: '🧊' },
-            { name: 'RC Divider', img: 'divider.png' },
-            { name: 'Pfandsäcke', emoji: '💰' },
-            { name: 'Einwegtalons', emoji: '🎟️' },
-            { name: 'Dirty bags', emoji: '🗑️' },
-            { name: 'Clean bags', emoji: '✨' },
-            { name: 'Müllsäcke', emoji: '🗑️' },
-            { name: 'Sodastream', emoji: '💨' },
-            { name: 'Pfandblomben', img: 'plombe.png' },
-            { name: 'Palettenbänder', emoji: '🧵' },
-            { name: 'Papierhandtücher', img: 'papiertuecher.png' },
-            { name: 'Folie Klar', img: 'folieklar.png' },
-            { name: 'Folie Schwarz', img: 'folieschwarz.png' },
-        ];
+  function buzz(p) {
+    try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {}
+  }
 
-        // Standardwerte für bestimmte Items beim Kopieren
-        const defaultValues = {
-            'Einweg Glas (Blaue Faltkiste)': 'xxxxx',
-            'EPS Steigen': 'xxxxx',
-            'RC': 'xxxxx',
-            'IPT': 'xxxxx',
-            'RC Divider': 'xxxxx'
-        };
+  function build() {
+    var frag = document.createDocumentFragment();
+    SHEETS.forEach(function (sheet) {
+      var card = document.createElement("div");
+      card.className = "sheet";
+      sheet.forEach(function (def) {
+        var name = def.n;
+        var it = { id: slug(name), name: name };
 
-        /* ---------------------------------------------
-           RENDER + LOGIC
-        --------------------------------------------- */
+        var row = document.createElement("div");
+        row.className = "row";
 
-        let counts = {};
-        let editingItem = null;
-        let addingItem = null;
-        let summaryMinimized = true; // Standardmäßig minimiert
+        var minus = document.createElement("button");
+        minus.type = "button";
+        minus.className = "minus";
+        minus.setAttribute("aria-label", name + ": eine Palette abziehen");
+        minus.innerHTML = '<span class="ring"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span>';
 
-        /* -------- LocalStorage Funktionen -------- */
-        function saveCounts() {
-            const data = {
-                counts: counts,
-                timestamp: Date.now()
-            };
-            localStorage.setItem('pfandCounts', JSON.stringify(data));
+        var plus = document.createElement("button");
+        plus.type = "button";
+        plus.className = "plus";
+        var nm = document.createElement("span");
+        nm.className = "name";
+        nm.textContent = name;
+        var ct = document.createElement("span");
+        ct.className = "count";
+        ct.setAttribute("aria-hidden", "true");
+        ct.addEventListener("animationend", function () { ct.classList.remove("bump", "dip"); });
+        plus.appendChild(nm);
+        plus.appendChild(ct);
+        if (def.img) {
+          var pic = document.createElement("img");
+          pic.className = "pic";
+          pic.alt = "";
+          pic.width = def.w;
+          pic.height = def.h;
+          pic.decoding = "async";
+          pic.draggable = false;
+          pic.addEventListener("error", function () { pic.remove(); });
+          pic.src = def.img;
+          plus.appendChild(pic);
         }
 
-        function loadCounts() {
-            const saved = localStorage.getItem('pfandCounts');
-            if (saved) {
-                const data = JSON.parse(saved);
-                const now = Date.now();
-                const sixHours = 6 * 60 * 60 * 1000; // 6 Stunden in Millisekunden
+        row.appendChild(minus);
+        row.appendChild(plus);
+        card.appendChild(row);
 
-                // Prüfe ob Daten älter als 6 Stunden sind
-                if (data.timestamp && (now - data.timestamp) < sixHours) {
-                    // Daten sind noch gültig
-                    counts = data.counts || {};
-                } else {
-                    // Daten sind zu alt, lösche sie
-                    localStorage.removeItem('pfandCounts');
-                    counts = {};
-                }
-            }
-        }
+        it.row = row; it.minus = minus; it.plus = plus; it.ct = ct;
+        plus.addEventListener("click", function () { change(it, 1); });
+        minus.addEventListener("click", function () { change(it, -1); });
+        items.push(it);
+      });
+      frag.appendChild(card);
+    });
+    $("list").appendChild(frag);
+  }
 
-        function renderGrid() {
-            const grid = document.getElementById("grid");
-            grid.innerHTML = "";
+  function paint(it) {
+    var n = state.counts[it.id] || 0;
+    it.ct.textContent = n;
+    it.row.classList.toggle("has", n > 0);
+    it.minus.disabled = n === 0;
+    it.plus.setAttribute("aria-label", it.name + ": " + n + (n === 1 ? " Palette" : " Paletten") + ". Antippen zählt eine dazu.");
+  }
 
-            items.forEach(item => {
-                const count = counts[item.name] || 0;
+  function change(it, d) {
+    var cur = state.counts[it.id] || 0;
+    var next = Math.max(0, cur + d);
+    if (next === cur) return;
+    if (next) state.counts[it.id] = next; else delete state.counts[it.id];
+    save();
+    paint(it);
+    it.ct.classList.remove("bump", "dip");
+    void it.ct.offsetWidth;
+    it.ct.classList.add(d > 0 ? "bump" : "dip");
+    buzz(d > 0 ? 12 : [8, 50, 8]);
+    summary();
+  }
 
-                const icon = item.img
-                    ? `<img src="img/${item.img}" class="h-20 w-20 object-contain drop-shadow-lg">`
-                    : `<div class="text-6xl">${item.emoji}</div>`;
+  function text() {
+    return items
+      .filter(function (it) { return state.zeros || state.counts[it.id] > 0; })
+      .map(function (it) { return it.name + ": " + (state.counts[it.id] || 0) + "x"; })
+      .join("\n");
+  }
 
-                grid.innerHTML += `
-        <div class="bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-700">
-            <div onclick="increment('${item.name}')" 
-                 class="bg-gradient-to-br from-blue-600 to-blue-800 h-32 flex items-center justify-center cursor-pointer active:scale-95">
-                ${icon}
-            </div>
+  function summary() {
+    var total = 0, kinds = 0;
+    items.forEach(function (it) {
+      var n = state.counts[it.id] || 0;
+      total += n;
+      if (n) kinds++;
+    });
+    $("total").textContent = total;
+    $("total-word").textContent = total === 1 ? "Palette" : "Paletten";
+    $("kinds").textContent = kinds ? "in " + kinds + (kinds === 1 ? " Ordertyp" : " Ordertypen") : "noch nichts gezählt";
+    var t = text();
+    var pv = $("preview");
+    pv.value = t;
+    pv.rows = Math.max(3, t ? t.split("\n").length : 3);
+  }
 
-            <div class="p-3">
-                <p class="text-xs font-semibold text-gray-300 leading-tight mb-2">${item.name}</p>
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-2xl font-bold text-blue-400">${count}</span>
-                    <div class="flex gap-1">
-                        <button onclick="startEdit('${item.name}')" class="bg-blue-600 hover:bg-blue-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
-                            E
-                        </button>
+  // Hinweis-Leiste über der Summe
+  var toastTimer;
+  function hideToast() {
+    $("toast").classList.remove("show");
+    clearTimeout(toastTimer);
+  }
+  function toast(msg, opt) {
+    opt = opt || {};
+    var act = $("toast-action");
+    $("toast-text").textContent = msg;
+    if (opt.action) {
+      act.textContent = opt.actionLabel || "Rückgängig";
+      act.hidden = false;
+      act.onclick = function () { hideToast(); opt.action(); };
+    } else {
+      act.hidden = true;
+      act.onclick = null;
+    }
+    $("toast").classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, opt.ms || 2400);
+  }
 
-                        <button onclick="startAdd('${item.name}')" class="bg-green-600 hover:bg-green-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold">
-                            +
-                        </button>
+  // Kopieren
+  var copyBtn = $("copy"), copyTimer;
+  function copied() {
+    copyBtn.classList.add("done");
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(function () { copyBtn.classList.remove("done"); }, 1600);
+  }
+  function fallbackCopy(t) {
+    var pv = $("preview");
+    pv.value = t;
+    var ok = false;
+    try {
+      pv.focus({ preventScroll: true });
+      pv.select();
+      pv.setSelectionRange(0, t.length);
+      ok = document.execCommand("copy");
+    } catch (e) {}
+    if (ok) { pv.blur(); copied(); return; }
+    pv.scrollIntoView({ block: "center", behavior: "smooth" });
+    toast("Automatisch kopieren ging nicht. Der Text unten ist markiert, kopiere ihn über das Menü.", { ms: 5000 });
+  }
+  copyBtn.addEventListener("click", function () {
+    var t = text();
+    if (!t) { toast("Noch keine Paletten gezählt."); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(copied, function () { fallbackCopy(t); });
+    } else {
+      fallbackCopy(t);
+    }
+  });
 
-                        ${count > 0 ? `
-                        <button onclick="decrement('${item.name}')" class="bg-red-600 hover:bg-red-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold">
-                            -
-                        </button>` : ""}
-                    </div>
-                </div>
-            </div>
-        </div>`;
-            });
+  // Nullen mitkopieren
+  var zeros = $("zeros");
+  zeros.addEventListener("change", function () {
+    state.zeros = zeros.checked;
+    save();
+    summary();
+  });
 
-            renderSummary();
-        }
+  // Bilder ein- und ausblenden
+  var picsBox = $("pics");
+  function showPics() { $("list").classList.toggle("pics", state.pics); }
+  picsBox.addEventListener("change", function () {
+    state.pics = picsBox.checked;
+    save();
+    showPics();
+  });
 
-        function increment(item) {
-            counts[item] = (counts[item] || 0) + 1;
-            updateSingleItem(item);
-            renderSummary();
-            saveCounts();
-        }
+  // Zurücksetzen mit zweitem Tipp und Rückgängig
+  var resetBtn = $("reset"), resetLabel = resetBtn.textContent, armedAt = 0, armTimer;
+  function disarm() {
+    armedAt = 0;
+    clearTimeout(armTimer);
+    resetBtn.classList.remove("armed");
+    resetBtn.textContent = resetLabel;
+  }
+  function repaintAll() {
+    save();
+    items.forEach(paint);
+    summary();
+  }
+  resetBtn.addEventListener("click", function () {
+    if (!Object.keys(state.counts).length) { disarm(); toast("Alles steht schon auf 0."); return; }
+    var now = Date.now();
+    if (!armedAt) {
+      armedAt = now;
+      resetBtn.classList.add("armed");
+      resetBtn.textContent = "Sicher? Zum Löschen nochmal tippen";
+      armTimer = setTimeout(disarm, 4000);
+      return;
+    }
+    if (now - armedAt < 600) return; // versehentlichen Doppeltipp ignorieren
+    var before = state.counts;
+    disarm();
+    state.counts = {};
+    repaintAll();
+    toast("Alle Zähler stehen auf 0.", {
+      action: function () { state.counts = before; repaintAll(); },
+      actionLabel: "Rückgängig",
+      ms: 6000
+    });
+  });
 
-        function decrement(item) {
-            counts[item] = Math.max(0, (counts[item] || 0) - 1);
-            updateSingleItem(item);
-            renderSummary();
-            saveCounts();
-        }
+  // iOS zeigt :active nur mit einem touchstart-Listener
+  document.addEventListener("touchstart", function () {}, { passive: true });
 
-        function updateSingleItem(itemName) {
-            const item = items.find(i => i.name === itemName);
-            const count = counts[itemName] || 0;
-            const index = items.indexOf(item);
+  function start() {
+    state = load() || state;
+    build();
+    zeros.checked = state.zeros;
+    picsBox.checked = state.pics;
+    showPics();
+    items.forEach(paint);
+    summary();
+  }
 
-            const cards = document.querySelectorAll('#grid > div');
-            if (cards[index]) {
-                const cardContent = cards[index].querySelector('.p-3');
-                cardContent.innerHTML = `
-            <p class="text-xs font-semibold text-gray-300 leading-tight mb-2">${itemName}</p>
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-2xl font-bold text-blue-400">${count}</span>
-                <div class="flex gap-1">
-                    <button onclick="startEdit('${itemName}')" class="bg-blue-600 hover:bg-blue-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
-                        E
-                    </button>
-
-                    <button onclick="startAdd('${itemName}')" class="bg-green-600 hover:bg-green-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold">
-                        +
-                    </button>
-
-                    ${count > 0 ? `
-                    <button onclick="decrement('${itemName}')" class="bg-red-600 hover:bg-red-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold">
-                        -
-                    </button>` : ""}
-                </div>
-            </div>
-        `;
-            }
-        }
-
-        /* -------- Modal Edit -------- */
-        function startEdit(item) {
-            editingItem = item;
-            document.getElementById("modal").classList.remove("hidden");
-            document.getElementById("modalTitle").innerText = item;
-            const input = document.getElementById("modalInput");
-            input.value = counts[item] || 0;
-
-            // Für mobile Geräte: Tastatur sofort öffnen
-            setTimeout(() => {
-                input.focus();
-                input.select(); // Selektiert den Text für schnelles Überschreiben
-                // iOS Safari Fix: Trigger input event
-                input.setSelectionRange(0, input.value.length);
-            }, 150);
-        }
-
-        function saveEdit() {
-            const value = parseInt(document.getElementById("modalInput").value);
-            counts[editingItem] = Math.max(0, value || 0);
-            closeModal();
-            updateSingleItem(editingItem);
-            renderSummary();
-            saveCounts();
-        }
-
-        function closeModal() {
-            document.getElementById("modal").classList.add("hidden");
-        }
-
-        /* -------- Modal Add -------- */
-        function startAdd(item) {
-            addingItem = item;
-            document.getElementById("modalAdd").classList.remove("hidden");
-            document.getElementById("modalAddTitle").innerText = item;
-            document.getElementById("modalAddCurrent").innerText = counts[item] || 0;
-            const input = document.getElementById("modalAddInput");
-            input.value = "";
-
-            // Für mobile Geräte: Tastatur sofort öffnen
-            setTimeout(() => {
-                input.focus();
-                // iOS Safari Fix
-                input.click();
-            }, 150);
-        }
-
-        function saveAdd() {
-            const addValue = parseInt(document.getElementById("modalAddInput").value);
-            if (!isNaN(addValue)) {
-                counts[addingItem] = (counts[addingItem] || 0) + addValue;
-            }
-            closeModalAdd();
-            updateSingleItem(addingItem);
-            renderSummary();
-            saveCounts();
-        }
-
-        function closeModalAdd() {
-            document.getElementById("modalAdd").classList.add("hidden");
-        }
-
-        /* -------- Reset Confirmation -------- */
-        function resetAll() {
-            document.getElementById("modalReset").classList.remove("hidden");
-        }
-
-        function confirmReset() {
-            counts = {};
-            localStorage.removeItem('pfandCounts'); // Lösche gespeicherte Daten
-            closeModalReset();
-            renderGrid();
-        }
-
-        function closeModalReset() {
-            document.getElementById("modalReset").classList.add("hidden");
-        }
-
-        /* -------- Summary -------- */
-        function toggleSummary() {
-            summaryMinimized = !summaryMinimized;
-            renderSummary();
-        }
-
-        function renderSummary() {
-            const summary = document.getElementById("summary");
-            const entries = Object.entries(counts).filter(([_, c]) => c > 0);
-
-            if (entries.length === 0) {
-                summary.classList.add("hidden");
-                return;
-            }
-
-            summary.classList.remove("hidden");
-
-            const totalCount = entries.reduce((sum, [_, count]) => sum + count, 0);
-
-            if (summaryMinimized) {
-                summary.innerHTML = `
-            <div onclick="toggleSummary()" class="flex items-center justify-between cursor-pointer hover:bg-gray-800 p-2 rounded-lg transition">
-                <h2 class="text-lg font-bold text-blue-400">📋 ${entries.length} Items (${totalCount} gesamt)</h2>
-                <button class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">▲ Öffnen</button>
-            </div>
-        `;
-            } else {
-                summary.innerHTML = `
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-xl font-bold text-blue-400">📋 Zusammenfassung</h2>
-                <div class="flex gap-2">
-                    <button onclick="toggleSummary()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold text-sm">
-                        ▼ Minimieren
-                    </button>
-                    <button id="copyBtn" onclick="copyToClipboard()" class="transition-all bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-sm">
-                        📋 COPY
-                    </button>
-                </div>
-            </div>
-
-            <div class="bg-gray-800 rounded-lg p-3 mb-3 font-mono text-sm border border-gray-700 text-gray-300">
-                ${entries.map(([name, count]) => `${name}: ${count}`).join("<br>")}
-            </div>
-
-            ${entries.map(([name, count]) => `
-                <div class="flex justify-between items-center py-1 border-b border-gray-700">
-                    <span class="text-sm font-medium text-gray-300">${name}</span>
-                    <span class="text-lg font-bold text-blue-400">${count}</span>
-                </div>
-            `).join("")}
-        `;
-            }
-        }
-
-
-
-        /* -------- Copy Animation -------- */
-        function copyToClipboard() {
-            const d = new Date();
-            const pad = n => n.toString().padStart(2, "0");
-            const datum = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
-
-            let text = `Pfandzählung vom: ${datum}\n\n`;
-
-            // ALLE Items in der ursprünglichen Reihenfolge
-            text += items.map(item => {
-                const value = counts[item.name] || 0;
-                // Wenn kein Wert gesetzt wurde und es einen Standardwert gibt, diesen verwenden
-                const displayValue = (value === 0 && defaultValues[item.name]) ? defaultValues[item.name] : value;
-                return `${item.name}: ${displayValue}`;
-            }).join("\n");
-
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = document.getElementById("copyBtn");
-                btn.innerText = "✔ Kopiert";
-                btn.classList.add("bg-green-700", "scale-110");
-
-                setTimeout(() => {
-                    btn.innerText = "📋 COPY";
-                    btn.classList.remove("bg-green-700", "scale-110");
-                }, 1200);
-            });
-        }
-
-        /* -------- Pull-to-Refresh verhindern -------- */
-        let lastTouchY = 0;
-        let preventPullToRefresh = false;
-
-        document.addEventListener('touchstart', (e) => {
-            if (e.touches.length !== 1) { return; }
-            lastTouchY = e.touches[0].clientY;
-            // Verhindere Pull-to-Refresh wenn am Seitenanfang
-            preventPullToRefresh = (window.pageYOffset === 0);
-        }, { passive: false });
-
-        document.addEventListener('touchmove', (e) => {
-            const touchY = e.touches[0].clientY;
-            const touchYDelta = touchY - lastTouchY;
-            lastTouchY = touchY;
-
-            if (preventPullToRefresh) {
-                // Verhindere das Scrollen nach oben wenn bereits am Anfang
-                if (touchYDelta > 0) {
-                    e.preventDefault();
-                    return;
-                }
-            }
-        }, { passive: false });
-
-        /* -------- Init -------- */
-        window.onload = () => {
-            const d = new Date();
-            const pad = n => n.toString().padStart(2, "0");
-            const heute = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
-            document.getElementById("datumText").innerText = `Pfandzählung vom: ${heute}`;
-
-            loadCounts(); // Lade gespeicherte Daten
-            renderGrid();
-        };
-    </script>
-
+  start();
+})();
+</script>
 </body>
-
 </html>
