@@ -16,7 +16,7 @@ Die Anwendung wurde von **Nando** mit Unterstützung von Claude (AI-Assistent) e
 - 👆 **Antippen = +1**
 - ✏️ **E** – Wert direkt bearbeiten, **+** – Menge hinzufügen, **−** – um 1 verringern
 - 🖼️ **Bilder** – Kasten und Flasche je Artikel, mit Hinweis zur Flaschenzahl (z. B. „24 Flaschen“)
-- 📋 **COPY** – Text wie in V2 („Pfandzählung vom: Datum“, alle Artikel, „xxxxx“ bei bestimmten Artikeln ohne Zählung)
+- 📋 **COPY** – Text wie in V2 („Pfandzählung vom: Datum“, alle Artikel, nicht Gezähltes mit 0)
 - 💾 **Automatisches Speichern** – die Zählung bleibt beim Schließen und erneuten Öffnen erhalten
 - ⏰ **Auto-Löschung** – nach 6 Stunden ohne Änderung wird die Zählung verworfen
 - 🔄 **Alle zurücksetzen** – mit Bestätigung
