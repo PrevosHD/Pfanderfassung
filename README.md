@@ -1,43 +1,42 @@
-# 📦 Pfanderfassung – Palettenzähler
+# 📦 Pfanderfassung – Pfandzählung V3
 
-Eine einfache Web-Anwendung zum Zählen der fertigen Paletten pro Ordertyp.
+Eine einfache Web-Anwendung zur Erfassung und Zählung von Pfandartikeln.
 
 ## 📝 Beschreibung
 
-Der Palettenzähler wurde für das FC2 entwickelt, um schnell zu erfassen, wie viele fertige Paletten es pro Ordertyp gibt. Er enthält die 35 Ordertypen aus dem Sortier-Ordner, in derselben Reihenfolge wie im Ordner und mit Bildern von Kasten und Flaschen.
+Diese Webanwendung wurde speziell für das FC2 entwickelt, um die tägliche Erfassung des Pfandbestandes zu erleichtern. V3 verbindet das Design der Pfandzählung V2 mit einer Liste aller Artikel untereinander, jeweils mit Bild von Kasten und Flasche und der Anzahl Flaschen pro Kasten.
 
-Die bisherige **Pfandzählung V2** (mit weiteren Pfandartikeln wie Folie, RC, Plomben und Pfandsäcken) liegt unverändert auf dem Branch `main`.
+Die bisherige **Pfandzählung V2** liegt unverändert auf dem Branch `main`.
 
 Die Anwendung wurde von **Nando** mit Unterstützung von Claude (AI-Assistent) erstellt und ist ausschließlich für den internen Gebrauch im FC2 bestimmt.
 
 ## ✨ Features
 
-- 📱 **Fürs Handy gebaut** – große Tippflächen, Summe und Kopieren-Button immer unten sichtbar
-- 👆 **Antippen = +1 Palette** – mit dem **−** links wird ein Vertipper wieder abgezogen
-- 🖼️ **Bilder aus dem Ordner** – zu jedem Ordertyp Kasten und Flaschen, über „Bilder anzeigen“ ausblendbar
-- 📋 **Kopieren** – Liste im Format `Bier 0.33L: 5x`, auf Wunsch mit allen Ordertypen inklusive 0
-- 💾 **Automatisches Speichern** – die Zählung bleibt im Browser erhalten, auch nach dem Neuladen
-- 🔄 **Alle auf 0 setzen** – mit zweitem Tipp zur Bestätigung und „Rückgängig“
-- 🌙 **Hell und dunkel** – folgt der Einstellung des Geräts
+- 📱 **Fürs Handy gebaut** – alle Artikel untereinander, Getränke in der Reihenfolge des Sortier-Ordners
+- 👆 **Antippen = +1**
+- ✏️ **E** – Wert direkt bearbeiten, **+** – Menge hinzufügen, **−** – um 1 verringern
+- 🖼️ **Bilder** – Kasten und Flasche je Artikel, mit Hinweis zur Flaschenzahl (z. B. „24 Flaschen“)
+- 📋 **COPY** – Text wie in V2 („Pfandzählung vom: Datum“, alle Artikel, „xxxxx“ bei bestimmten Artikeln ohne Zählung)
+- 💾 **Automatisches Speichern** – die Zählung bleibt beim Schließen und erneuten Öffnen erhalten
+- ⏰ **Auto-Löschung** – nach 6 Stunden ohne Änderung wird die Zählung verworfen
+- 🔄 **Alle zurücksetzen** – mit Bestätigung
+- ⬆️ **Nach-oben-Knopf** unten rechts
 
 ## 🔒 Datenschutz & Speicherung
 
 **Wichtig:** Die Zählung erfolgt **lokal auf dem Endgerät** und wird **nicht auf einem Server gespeichert**. Es werden keine Logs erstellt oder Daten übertragen.
 
 - Alle Eingaben werden automatisch im Browser-Speicher (localStorage) gespeichert
-- Die Daten bleiben erhalten, bis unten auf „Alle auf 0 setzen“ getippt wird
+- Daten älter als **6 Stunden** (seit der letzten Änderung) werden beim nächsten Öffnen automatisch gelöscht
+- Manuelle Löschung jederzeit über „Alle zurücksetzen“
 
 ## 🚀 Verwendung
 
 1. Öffne die `index.html` in einem modernen Webbrowser (der Ordner `img/` muss daneben liegen)
-2. Tippe für jede fertige Palette auf den passenden Ordertyp
-3. Tippe unten auf **Kopieren** und füge die Liste ein, zum Beispiel:
-   ```
-   Bier 0.33L: 5x
-   Stubbi 0.5L: 6x
-   Cola PET 1L: 3x
-   ```
-4. Für eine neue Zählung unten auf **Alle auf 0 setzen** tippen
+2. Tippe auf einen Artikel, um die Anzahl um 1 zu erhöhen
+3. Rechts: **E** – Wert direkt eingeben, **+** – Menge hinzufügen, **−** – um 1 verringern
+4. Tippe unten auf **COPY**, um die Zählung in die Zwischenablage zu kopieren
+5. Mit „Alle zurücksetzen“ beginnst du eine neue Zählung
 
 ## 📦 Installation
 
@@ -45,8 +44,8 @@ Keine Installation erforderlich! Einfach `index.html` und den Ordner `img/` 1:1 
 
 ## 🖼️ Bildrechte
 
-- `img/*.jpg` – Ausschnitte aus Fotos des Sortier-Ordners (Kasten und Flaschen je Ordertyp)
-- `img/*.png` – Bilder der Pfandzählung V2 von Google Bilder, im Palettenzähler nicht verwendet
+- `img/p-*.png` – Produktbilder (Kasten und Flasche), aus dem Internet zusammengestellt
+- übrige Dateien in `img/` – Bilder der Pfandzählung V2 und ein Foto aus dem Sortier-Ordner
 
 **Hinweis:** Es besteht **kein Recht an den Produktbildern**. Die Bilder dienen ausschließlich der internen Verwendung zur besseren Identifikation der Pfandartikel.
 
